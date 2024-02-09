@@ -9,9 +9,11 @@ import io.cucumber.java.en.When;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CreateProductsStepdefinition {
 
@@ -38,6 +40,27 @@ public class CreateProductsStepdefinition {
     @Then("Validate that if the product was {string}")
     public void validateThatTheProductWas(String created) {
         assertEquals(context.response.getStatusCode() == 201, Boolean.valueOf(created));
+    }
+
+    @When("get all products having price_min and price_max set on")
+    public void getAllProductsHavingPriceMinAndPriceMaxSetOn(DataTable dataTable){
+        Map<String, String> queryParams = dataTable.asMaps().get(0);
+
+        context.response = context.requestSetup().queryParams(queryParams)
+                .when().get(context.session.get("endpoint").toString());
+
+        ProductsDTO[] products = context.response.getBody().as(ProductsDTO[].class);
+        context.testData.put("products", products);
+
+        LOG.info("Get all products number: " + products.length);
+    }
+
+    @Then("check if endpoint provide products having price between the given prices {string}, {string}")
+    public void checkIfEndpointProvideProductsHavingPriceBetweenGivenPrices(String min, String max){
+        ProductsDTO[] products = context.response.getBody().as(ProductsDTO[].class);
+        boolean answer = Arrays.stream(products).allMatch(product -> product.price >= Integer.parseInt(min) && product.price <= Integer.parseInt(max));
+        assertTrue("Provided prices are not between given prices!", answer);
+        LOG.info("Provided prices are between given prices: " + answer);
     }
 
 }
